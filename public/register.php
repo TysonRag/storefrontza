@@ -1,4 +1,4 @@
-—<?php
+<?php
 require_once __DIR__ . '/../includes/auth.php';
 
 if (current_user_id()) {
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         [$ok, $result] = register_user($email, $password);
         if ($ok) {
-            $_SESSION['user_id'] = $result;
+            login_session($result['id'], $result['email']);
             header('Location: /dashboard.php');
             exit;
         } else {
