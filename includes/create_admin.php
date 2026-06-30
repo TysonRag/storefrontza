@@ -19,7 +19,7 @@ if (PHP_SAPI !== 'cli') {
     exit("This script must be run from the command line.\n");
 }
 
-require_once __DIR__ . '/includes/db.php'; // adjust path if db.php lives elsewhere
+require_once __DIR__ . '/db.php'; // adjust path if db.php lives elsewhere
 
 // --- gather email -----------------------------------------------------------
 $email = $argv[1] ?? null;
