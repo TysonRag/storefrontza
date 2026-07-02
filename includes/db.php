@@ -1,36 +1,54 @@
 <?php
-// Database connection — SQLite, single file, zero external DB server needed.
-// The .sqlite file lives in /data so it persists across deploys on most hosts
-// (mount /data as a persistent volume in production; on free/staging hosts
-// without persistent storage, data resets on redeploy — that's expected for QA).
+// SQLite database + schema. The DB file lives in a data dir that should be a
+// PERSISTENT disk in production (set DATA_DIR to the mount path, e.g. /var/data),
+// otherwise accounts and progress reset on every redeploy.
 
 function db(): PDO {
     static $pdo = null;
-    if ($pdo === null) {
-        $dbPath = __DIR__ . '/../data/storefrontza.sqlite';
-        $pdo = new PDO('sqlite:' . $dbPath);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('PRAGMA foreign_keys = ON;');
+    if ($pdo !== null) return $pdo;
 
-        // Create tables if they don't exist yet — keeps setup to zero manual steps.
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT NOT NULL UNIQUE,
-                password_hash TEXT NOT NULL,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            );
-        ");
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS progress (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                module_key TEXT NOT NULL,
-                completed_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_id, module_key),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            );
-        ");
-    }
+    $dir = getenv('DATA_DIR') ?: (__DIR__ . '/../data');
+    if (!is_dir($dir)) @mkdir($dir, 0775, true);
+
+    $pdo = new PDO('sqlite:' . $dir . '/storefrontza.sqlite');
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->exec('PRAGMA journal_mode = WAL;');
+    $pdo->exec('PRAGMA foreign_keys = ON;');
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        streak_current INTEGER NOT NULL DEFAULT 0,
+        streak_longest INTEGER NOT NULL DEFAULT 0,
+        last_active TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime(\'now\'))
+    )');
+
+    // progress rows cover both modules (m1..m9) and tool activities (tool_*)
+    $pdo->exec('CREATE TABLE IF NOT EXISTS progress (
+        user_id INTEGER NOT NULL,
+        item_key TEXT NOT NULL,
+        completed_at TEXT NOT NULL DEFAULT (datetime(\'now\')),
+        PRIMARY KEY (user_id, item_key),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )');
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS achievements (
+        user_id INTEGER NOT NULL,
+        badge_key TEXT NOT NULL,
+        earned_at TEXT NOT NULL DEFAULT (datetime(\'now\')),
+        PRIMARY KEY (user_id, badge_key),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )');
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS password_resets (
+        token_hash TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        expires_at TEXT NOT NULL,
+        used INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )');
+
     return $pdo;
 }
