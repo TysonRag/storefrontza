@@ -1,69 +1,36 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
-
-if (current_user_id()) {
-    header('Location: /dashboard.php');
-    exit;
-}
+require_once __DIR__ . '/../includes/layout.php';
+if (current_user_id()) { header('Location: /dashboard.php'); exit; }
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
     $confirm = $_POST['confirm'] ?? '';
-
     if ($password !== $confirm) {
         $error = 'Passwords do not match.';
     } else {
         [$ok, $result] = register_user($email, $password);
-        if ($ok) {
-            login_session($result['id'], $result['email']);
-            header('Location: /dashboard.php');
-            exit;
-        } else {
-            $error = $result;
-        }
+        if ($ok) { login_session($result['id'], $result['email']); header('Location: /dashboard.php'); exit; }
+        $error = $result;
     }
 }
+layout_header('Create your account');
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Create your account — StorefrontZA</title>
-<link rel="stylesheet" href="/assets/css/style.css">
-</head>
-<body>
-  <div class="topbar">
-    <div class="brand">Storefront<span>ZA</span></div>
-    <div><a href="/login.php">Log in</a></div>
+<div class="auth">
+  <div class="auth-card">
+    <p class="auth-ey">Free forever · no card</p>
+    <h1>Create your account</h1>
+    <p class="auth-sub">Start the course, earn XP, and track your progress.</p>
+    <?php if ($error): ?><div class="flash err"><?= e($error) ?></div><?php endif; ?>
+    <form method="post" class="form">
+      <label>Email address<input type="email" name="email" required autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>"></label>
+      <label>Password<input type="password" name="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters"></label>
+      <label>Confirm password<input type="password" name="confirm" required minlength="8" autocomplete="new-password"></label>
+      <button class="btn btn-primary btn-block">Create account</button>
+    </form>
+    <p class="auth-alt">Already have an account? <a href="/login.php">Log in</a></p>
   </div>
-
-  <div class="wrap">
-    <div class="card">
-      <h1>Create your free account</h1>
-      <p class="sub">Start the course, track your progress, pick up where you left off.</p>
-
-      <?php if ($error): ?>
-        <div class="error"><?= htmlspecialchars($error) ?></div>
-      <?php endif; ?>
-
-      <form method="post">
-        <label for="email">Email address</label>
-        <input type="email" id="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
-
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required minlength="8">
-
-        <label for="confirm">Confirm password</label>
-        <input type="password" id="confirm" name="confirm" required minlength="8">
-
-        <button type="submit">Create account</button>
-      </form>
-
-      <p class="muted-link">Already have an account? <a href="/login.php">Log in</a></p>
-    </div>
-  </div>
-</body>
-</html>
+</div>
+<?php layout_footer(); ?>

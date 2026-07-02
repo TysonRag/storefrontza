@@ -1,63 +1,44 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/layout.php';
 require_admin();
 
-$allSteps = require __DIR__ . '/../includes/modules.php';
-$totalSteps = count($allSteps);
-
 $pdo = db();
-$users = $pdo->query('SELECT id, email, created_at FROM users ORDER BY created_at DESC')->fetchAll(PDO::FETCH_ASSOC);
+$total = count(course_modules());
+$users = $pdo->query('SELECT id, email, streak_current, streak_longest, created_at FROM users ORDER BY created_at DESC')->fetchAll(PDO::FETCH_ASSOC);
 
-$progressStmt = $pdo->prepare('SELECT COUNT(*) FROM progress WHERE user_id = ?');
+// progress + xp per user
+$mods = []; $toolsCount = [];
+foreach ($pdo->query('SELECT user_id, item_key FROM progress') as $row) {
+    $uid = (int)$row['user_id'];
+    if (str_starts_with($row['item_key'], 'tool_')) $toolsCount[$uid] = ($toolsCount[$uid] ?? 0) + 1;
+    else $mods[$uid] = ($mods[$uid] ?? 0) + 1;
+}
+layout_header('Admin', 'admin', true);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — StorefrontZA</title>
-<link rel="stylesheet" href="/assets/css/style.css">
-<style>
-  table { width: 100%; border-collapse: collapse; font-family: -apple-system, sans-serif; font-size: 14px; }
-  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #EFEBE0; }
-  th { color: var(--navy); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .stat { display: inline-block; background: rgba(200,150,44,0.1); color: var(--gold); padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
-</style>
-</head>
-<body>
-  <div class="topbar">
-    <div class="brand">Storefront<span>ZA</span> <span style="font-size:12px; color:var(--gold-soft); margin-left:8px;">ADMIN</span></div>
-    <div><a href="/dashboard.php">My Dashboard</a> <a href="/logout.php">Log out</a></div>
-  </div>
+<header class="page-head">
+  <p class="page-ey">Admin</p>
+  <h1>Members</h1>
+  <p class="page-sub"><?= count($users) ?> account<?= count($users) === 1 ? '' : 's' ?> · <?= $total ?> modules · <?= XP_MODULE ?> XP/module, <?= XP_TOOL ?> XP/tool</p>
+</header>
 
-  <div class="wrap wide">
-    <div class="card">
-      <h1>Registered Users</h1>
-      <p class="sub"><?= count($users) ?> total — sorted newest first</p>
-
-      <table>
-        <thead>
-          <tr><th>Email</th><th>Joined</th><th>Progress</th></tr>
-        </thead>
-        <tbody>
-          <?php foreach ($users as $u): ?>
-            <?php
-              $progressStmt->execute([$u['id']]);
-              $done = (int)$progressStmt->fetchColumn();
-              $pct = $totalSteps > 0 ? round(($done / $totalSteps) * 100) : 0;
-            ?>
-            <tr>
-              <td><?= htmlspecialchars($u['email']) ?></td>
-              <td><?= htmlspecialchars($u['created_at']) ?></td>
-              <td><span class="stat"><?= $done ?>/<?= $totalSteps ?> — <?= $pct ?>%</span></td>
-            </tr>
-          <?php endforeach; ?>
-          <?php if (empty($users)): ?>
-            <tr><td colspan="3">No users registered yet.</td></tr>
-          <?php endif; ?>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</body>
-</html>
+<div class="admin-table-wrap">
+<table class="admin-table">
+  <thead><tr><th>Email</th><th>Modules</th><th>XP</th><th>Streak</th><th>Joined</th></tr></thead>
+  <tbody>
+    <?php foreach ($users as $u):
+      $uid = (int)$u['id']; $m = $mods[$uid] ?? 0; $t = $toolsCount[$uid] ?? 0;
+      $xp = $m * XP_MODULE + $t * XP_TOOL; $pct = $total ? round($m/$total*100) : 0; ?>
+    <tr>
+      <td><?= e($u['email']) ?></td>
+      <td><div class="abar"><div style="width:<?= $pct ?>%"></div></div><span class="amuted"><?= $m ?>/<?= $total ?></span></td>
+      <td><?= $xp ?></td>
+      <td>🔥 <?= (int)$u['streak_current'] ?> <span class="amuted">(best <?= (int)$u['streak_longest'] ?>)</span></td>
+      <td class="amuted"><?= e($u['created_at']) ?></td>
+    </tr>
+    <?php endforeach; ?>
+    <?php if (!$users): ?><tr><td colspan="5" class="amuted">No accounts yet.</td></tr><?php endif; ?>
+  </tbody>
+</table>
+</div>
+<?php layout_footer(); ?>

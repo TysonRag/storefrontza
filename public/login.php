@@ -1,54 +1,29 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
-
-if (current_user_id()) {
-    header('Location: /dashboard.php');
-    exit;
-}
+require_once __DIR__ . '/../includes/layout.php';
+if (current_user_id()) { header('Location: /dashboard.php'); exit; }
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    [$ok, $result] = attempt_login($email, $password);
-    if ($ok) {
-        login_session($result['id'], $result['email']);
-        header('Location: /dashboard.php');
-        exit;
-    } else {
-        $error = $result;
-    }
+    [$ok, $result] = attempt_login($_POST['email'] ?? '', $_POST['password'] ?? '');
+    if ($ok) { login_session($result['id'], $result['email']); header('Location: /dashboard.php'); exit; }
+    $error = $result;
 }
+layout_header('Log in');
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Log in — StorefrontZA</title>
-<link rel="stylesheet" href="/assets/css/style.css">
-</head>
-<body>
-  <div class="topbar">
-    <div class="brand">Storefront<span>ZA</span></div>
-    <div><a href="/register.php">Create account</a></div>
+<div class="auth">
+  <div class="auth-card">
+    <p class="auth-ey">Welcome back</p>
+    <h1>Log in</h1>
+    <p class="auth-sub">Pick up right where you left off.</p>
+    <?php if ($error): ?><div class="flash err"><?= e($error) ?></div><?php endif; ?>
+    <form method="post" class="form">
+      <label>Email address<input type="email" name="email" required autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>"></label>
+      <label class="lbl-row">Password <a class="lbl-link" href="/forgot-password.php">Forgot?</a>
+        <input type="password" name="password" required autocomplete="current-password"></label>
+      <button class="btn btn-primary btn-block">Log in</button>
+    </form>
+    <p class="auth-alt">New here? <a href="/register.php">Create a free account</a></p>
   </div>
-  <div class="wrap">
-    <div class="card">
-      <h1>Welcome back</h1>
-      <p class="sub">Log in to continue where you left off.</p>
-      <?php if ($error): ?>
-        <div class="error"><?= htmlspecialchars($error) ?></div>
-      <?php endif; ?>
-      <form method="post">
-        <label for="email">Email address</label>
-        <input type="email" id="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-        <button type="submit">Log in</button>
-      </form>
-      <p class="muted-link">Don't have an account? <a href="/register.php">Create one free</a></p>
-    </div>
-  </div>
-</body>
-</html>
+</div>
+<?php layout_footer(); ?>
