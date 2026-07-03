@@ -51,12 +51,11 @@ function db(): PDO {
     )');
 
     // ---- auto-seed a login so it survives free-tier filesystem wipes ----
-    // Credentials come ONLY from env vars (never hardcode them in a public repo).
-    // Set ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD in the Render dashboard.
-    // Insert-only: it never overwrites a password you've changed in-app during a
-    // live session, but after a wipe the account is recreated from these values.
-    $seedEmail = getenv('ADMIN_SEED_EMAIL');
-    $seedPass  = getenv('ADMIN_SEED_PASSWORD');
+    // Dev default is admin@admin.com / admin (repo is public, so swap before a real
+    // launch by setting ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD env vars).
+    // Insert-only: never overwrites a password changed in-app during a live session.
+    $seedEmail = getenv('ADMIN_SEED_EMAIL') ?: 'admin@admin.com';
+    $seedPass  = getenv('ADMIN_SEED_PASSWORD') ?: 'admin';
     if ($seedEmail && $seedPass) {
         $seedEmail = strtolower(trim($seedEmail));
         $chk = $pdo->prepare('SELECT id FROM users WHERE email = ?');

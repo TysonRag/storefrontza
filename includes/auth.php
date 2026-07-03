@@ -6,6 +6,7 @@ require_once __DIR__ . '/gamify.php';
 
 const ADMIN_EMAILS = [
     'tyson.padachiey@gmail.com',
+    'admin@admin.com',
 ];
 
 function current_user_id(): ?int { return $_SESSION['user_id'] ?? null; }
