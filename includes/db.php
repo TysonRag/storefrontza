@@ -50,6 +50,41 @@ function db(): PDO {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )');
 
+    // ---- Phase 2: admin-authored course structure --------------------------
+    // courses -> modules -> topics. A topic carries a content "type"
+    // (doc | video | assessment | scorm | file) plus a JSON body payload.
+    $pdo->exec('CREATE TABLE IF NOT EXISTS courses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        summary TEXT DEFAULT \'\',
+        icon TEXT DEFAULT \'📚\',
+        status TEXT NOT NULL DEFAULT \'draft\',
+        sort INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime(\'now\'))
+    )');
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS modules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        course_id INTEGER NOT NULL,
+        slug TEXT NOT NULL,
+        title TEXT NOT NULL,
+        summary TEXT DEFAULT \'\',
+        read_min INTEGER NOT NULL DEFAULT 0,
+        sort INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )');
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS topics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        module_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT \'doc\',
+        body TEXT DEFAULT \'\',
+        sort INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+    )');
+
     // ---- auto-seed a login so it survives free-tier filesystem wipes ----
     // Dev default is admin@admin.com / admin (repo is public, so swap before a real
     // launch by setting ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD env vars).
@@ -66,5 +101,59 @@ function db(): PDO {
         }
     }
 
+    // ---- one-time import of the existing Online Store course into the DB ----
+    try { seed_online_store_course($pdo); }
+    catch (\Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); }
+
     return $pdo;
+}
+
+// Imports the hardcoded Online Store course (from content.php) into the
+// courses/modules/topics tables exactly once. Safe to call on every request.
+function seed_online_store_course(PDO $pdo): void {
+    $chk = $pdo->prepare('SELECT id FROM courses WHERE slug = ?');
+    $chk->execute(['online-store']);
+    if ($chk->fetch()) return; // already seeded
+
+    if (!function_exists('course_modules')) {
+        $cf = __DIR__ . '/content.php';
+        if (is_file($cf)) require_once $cf;
+    }
+    if (!function_exists('course_modules')) return;
+
+    $pdo->beginTransaction();
+    $c = $pdo->prepare('INSERT INTO courses (slug,title,summary,icon,status,sort) VALUES (?,?,?,?,?,?)');
+    $c->execute([
+        'online-store',
+        'Build Your Online Store',
+        'The full path from choosing a product to your first local customer — priced in Rand, paid through PayFast & Yoco, delivered locally.',
+        '🛍️',
+        'published',
+        0,
+    ]);
+    $courseId = (int)$pdo->lastInsertId();
+
+    $mStmt = $pdo->prepare('INSERT INTO modules (course_id,slug,title,summary,read_min,sort) VALUES (?,?,?,?,?,?)');
+    $tStmt = $pdo->prepare('INSERT INTO topics (module_id,title,type,body,sort) VALUES (?,?,?,?,0)');
+
+    $sort = 0;
+    foreach (course_modules() as $m) {
+        $slug = $m['slug'] ?? ('module-' . ($m['num'] ?? $sort));
+        $mStmt->execute([
+            $courseId,
+            $slug,
+            $m['title'] ?? 'Module',
+            $m['summary'] ?? '',
+            (int)($m['read_min'] ?? 0),
+            $sort++,
+        ]);
+        $moduleId = (int)$pdo->lastInsertId();
+        $tStmt->execute([
+            $moduleId,
+            'Lesson: ' . ($m['title'] ?? 'Module'),
+            'doc',
+            json_encode($m['blocks'] ?? [], JSON_UNESCAPED_UNICODE),
+        ]);
+    }
+    $pdo->commit();
 }
