@@ -35,6 +35,7 @@ function layout_header(string $title, string $active = 'none', bool $wide = fals
         <a href="/ai-studio.php" class="<?= $active==='ai'?'on':'' ?>">AI&nbsp;Studio</a>
         <a href="/tools.php" class="<?= $active==='tools'?'on':'' ?>">Tools</a>
         <a href="/resources.php" class="<?= $active==='resources'?'on':'' ?>">Resources</a>
+        <?php if ($admin): ?><a href="/admin-courses.php" class="<?= $active==='builder'?'on':'' ?>">Builder</a><?php endif; ?>
         <?php if ($admin): ?><a href="/admin.php" class="<?= $active==='admin'?'on':'' ?>">Admin</a><?php endif; ?>
       <?php endif; ?>
     </nav>
