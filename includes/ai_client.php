@@ -5,16 +5,26 @@
 //   AI_BASE_URL  (default https://api.openai.com/v1 ; e.g. https://api.deepseek.com)
 //   AI_MODEL     (default gpt-4o-mini ; e.g. deepseek-chat)
 
+// Read an env var from every place a host might expose it. Some Apache/mod_php
+// setups (incl. common Docker images on Render) surface container env vars via
+// $_SERVER or $_ENV rather than getenv(), so we check all three.
+function env_val(string $k): string {
+    $v = getenv($k);
+    if ($v === false || $v === '') $v = $_SERVER[$k] ?? '';
+    if ($v === '') $v = $_ENV[$k] ?? '';
+    return is_string($v) ? trim($v) : '';
+}
+
 function ai_available(): bool {
-    return (bool) getenv('AI_API_KEY');
+    return env_val('AI_API_KEY') !== '';
 }
 
 // Returns ['text' => string] on success or ['error' => string] on failure.
 function ai_chat(string $system, string $user, int $maxTokens = 1200, float $temperature = 0.7): array {
-    $apiKey = getenv('AI_API_KEY');
-    if (!$apiKey) return ['error' => 'AI is not configured. Add an AI_API_KEY environment variable on the server to switch it on.'];
-    $baseUrl = rtrim(getenv('AI_BASE_URL') ?: 'https://api.openai.com/v1', '/');
-    $model   = getenv('AI_MODEL') ?: 'gpt-4o-mini';
+    $apiKey = env_val('AI_API_KEY');
+    if ($apiKey === '') return ['error' => 'AI is not configured. Add an AI_API_KEY environment variable on the server to switch it on.'];
+    $baseUrl = rtrim(env_val('AI_BASE_URL') ?: 'https://api.openai.com/v1', '/');
+    $model   = env_val('AI_MODEL') ?: 'gpt-4o-mini';
 
     $payload = json_encode([
         'model' => $model,
