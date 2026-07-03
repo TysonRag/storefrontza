@@ -50,5 +50,22 @@ function db(): PDO {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )');
 
+    // ---- auto-seed a login so it survives free-tier filesystem wipes ----
+    // Credentials come ONLY from env vars (never hardcode them in a public repo).
+    // Set ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD in the Render dashboard.
+    // Insert-only: it never overwrites a password you've changed in-app during a
+    // live session, but after a wipe the account is recreated from these values.
+    $seedEmail = getenv('ADMIN_SEED_EMAIL');
+    $seedPass  = getenv('ADMIN_SEED_PASSWORD');
+    if ($seedEmail && $seedPass) {
+        $seedEmail = strtolower(trim($seedEmail));
+        $chk = $pdo->prepare('SELECT id FROM users WHERE email = ?');
+        $chk->execute([$seedEmail]);
+        if (!$chk->fetch()) {
+            $ins = $pdo->prepare('INSERT INTO users (email, password_hash) VALUES (?, ?)');
+            $ins->execute([$seedEmail, password_hash($seedPass, PASSWORD_DEFAULT)]);
+        }
+    }
+
     return $pdo;
 }
