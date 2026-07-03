@@ -1,0 +1,18 @@
+{
+  "name": "StorefrontZA",
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": ".."
+  },
+  "forwardPorts": [
+    8080
+  ],
+  "portsAttributes": {
+    "8080": {
+      "label": "StorefrontZA",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "overrideCommand": true,
+  "postStartCommand": "nohup env DATA_DIR=\"$PWD/data\" php -S 0.0.0.0:8080 -t public > /tmp/php.log 2>&1 &"
+}
