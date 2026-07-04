@@ -1,13 +1,11 @@
 <?php
 // Reusable, provider-agnostic AI client (OpenAI-compatible /chat/completions).
-// Configure via environment variables — never hardcode a key:
-//   AI_API_KEY   (required to enable AI features)
-//   AI_BASE_URL  (default https://api.openai.com/v1 ; e.g. https://api.deepseek.com)
-//   AI_MODEL     (default gpt-4o-mini ; e.g. deepseek-chat)
+// The API key can be supplied EITHER as an env var (AI_API_KEY) OR, more simply,
+// as a Render "Secret File" named AI_API_KEY (mounted at /etc/secrets/AI_API_KEY).
+// Base URL and model are auto-detected from the key (OpenRouter vs OpenAI) but can
+// be overridden with AI_BASE_URL / AI_MODEL (env var or secret file).
 
-// Read an env var from every place a host might expose it. Some Apache/mod_php
-// setups (incl. common Docker images on Render) surface container env vars via
-// $_SERVER or $_ENV rather than getenv(), so we check all three.
+// Read an env var from every place a host might expose it.
 function env_val(string $k): string {
     $v = getenv($k);
     if ($v === false || $v === '') $v = $_SERVER[$k] ?? '';
@@ -15,16 +13,34 @@ function env_val(string $k): string {
     return is_string($v) ? trim($v) : '';
 }
 
+// Read a Render secret file (/etc/secrets/<name>), if present.
+function secret_val(string $name): string {
+    foreach (['/etc/secrets/' . $name, __DIR__ . '/../' . $name] as $path) {
+        if (is_file($path) && is_readable($path)) {
+            return trim((string)file_get_contents($path));
+        }
+    }
+    return '';
+}
+
+// Resolve a config value: env var first, then secret file.
+function ai_cfg(string $k): string {
+    $v = env_val($k);
+    return $v !== '' ? $v : secret_val($k);
+}
+
 function ai_available(): bool {
-    return env_val('AI_API_KEY') !== '';
+    return ai_cfg('AI_API_KEY') !== '';
 }
 
 // Returns ['text' => string] on success or ['error' => string] on failure.
 function ai_chat(string $system, string $user, int $maxTokens = 1200, float $temperature = 0.7): array {
-    $apiKey = env_val('AI_API_KEY');
-    if ($apiKey === '') return ['error' => 'AI is not configured. Add an AI_API_KEY environment variable on the server to switch it on.'];
-    $baseUrl = rtrim(env_val('AI_BASE_URL') ?: 'https://api.openai.com/v1', '/');
-    $model   = env_val('AI_MODEL') ?: 'gpt-4o-mini';
+    $apiKey = ai_cfg('AI_API_KEY');
+    if ($apiKey === '') return ['error' => 'AI is not configured. Add an AI_API_KEY (env var or Render Secret File) to switch it on.'];
+
+    $isOpenRouter = strncmp($apiKey, 'sk-or-', 6) === 0;
+    $baseUrl = rtrim(ai_cfg('AI_BASE_URL') ?: ($isOpenRouter ? 'https://openrouter.ai/api/v1' : 'https://api.openai.com/v1'), '/');
+    $model   = ai_cfg('AI_MODEL') ?: ($isOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini');
 
     $payload = json_encode([
         'model' => $model,
@@ -36,11 +52,14 @@ function ai_chat(string $system, string $user, int $maxTokens = 1200, float $tem
         'max_tokens' => $maxTokens,
     ]);
 
+    $headers = ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey];
+    if ($isOpenRouter) { $headers[] = 'HTTP-Referer: https://storefrontza.onrender.com'; $headers[] = 'X-Title: StorefrontZA'; }
+
     $ch = curl_init($baseUrl . '/chat/completions');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey],
+        CURLOPT_HTTPHEADER => $headers,
         CURLOPT_POSTFIELDS => $payload,
         CURLOPT_TIMEOUT => 60,
     ]);
