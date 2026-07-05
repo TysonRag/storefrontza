@@ -13,11 +13,29 @@ function env_val(string $k): string {
     return is_string($v) ? trim($v) : '';
 }
 
-// Read a Render secret file (/etc/secrets/<name>), if present.
+// Read a Render secret file. Tries the exact name first, then (for the API key)
+// scans the secret mount for ANY file whose contents look like a key, so a slightly
+// mis-named secret file still works.
 function secret_val(string $name): string {
     foreach (['/etc/secrets/' . $name, __DIR__ . '/../' . $name] as $path) {
         if (is_file($path) && is_readable($path)) {
-            return trim((string)file_get_contents($path));
+            $v = trim((string)@file_get_contents($path));
+            if ($v !== '') return $v;
+        }
+    }
+    if ($name === 'AI_API_KEY') {
+        foreach (['/etc/secrets', '/etc/secrets/..data'] as $dir) {
+            if (!is_dir($dir)) continue;
+            $entries = @scandir($dir);
+            if (!$entries) continue;
+            foreach ($entries as $f) {
+                if ($f === '.' || $f === '..') continue;
+                $p = $dir . '/' . $f;
+                if (is_file($p) && is_readable($p)) {
+                    $c = trim((string)@file_get_contents($p));
+                    if (preg_match('/^sk-[A-Za-z0-9_.\\-]{8,}/', $c)) return $c;
+                }
+            }
         }
     }
     return '';
