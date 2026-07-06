@@ -81,7 +81,7 @@ if (function_exists('current_user_id') && current_user_id()) { header('Location:
   /* ---------- hero ---------- */
   .hero{padding-top:clamp(48px,9vw,110px);padding-bottom:0;position:relative}
   .hero .eyebrow{margin-bottom:28px;animation:rise .7s .05s both}
-  .hero h1{font-size:clamp(52px,13.5vw,182px);animation:rise .7s .12s both}
+  .hero h1{font-size:clamp(52px,2.5vw,182px);animation:rise .7s .12s both}
   .hero h1 .out{-webkit-text-stroke:2px var(--ink);color:transparent}
   .hero-sub{max-width:34ch;margin:30px 0 0;font-family:var(--serif);font-style:italic;font-size:clamp(21px,2.6vw,30px);line-height:1.32;color:#1c1c1a;animation:rise .7s .2s both}
   .hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:38px;animation:rise .7s .28s both}
