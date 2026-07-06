@@ -19,16 +19,16 @@ function layout_header(string $title, string $active = 'none', bool $wide = fals
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= e($title) ?> · StorefrontZA</title>
+<title><?= e($title) ?> · The Hustle!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
 <header class="nav">
   <div class="nav-inner">
-    <a class="brand" href="<?= $email ? '/dashboard.php' : '/' ?>">Storefront<span>ZA</span></a>
+    <a class="brand" href="<?= $email ? '/dashboard.php' : '/' ?>"><svg class="brand-mark" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="6" fill="#0A0A0A"/><rect x="14.4" y="7" width="5.2" height="13.4" rx="1.4" fill="#fff"/><rect x="14.4" y="22.6" width="5.2" height="5.2" rx="1.4" fill="#fff"/></svg>The&nbsp;Hustle<span>!</span></a>
     <nav class="nav-links">
       <?php if ($email): ?>
         <a href="/dashboard.php" class="<?= $active==='course'?'on':'' ?>">Course</a>
@@ -59,8 +59,8 @@ function layout_footer(): void {
 </main>
 <footer class="site-foot">
   <div class="foot-inner">
-    <span class="brand small">Storefront<span>ZA</span></span>
-    <p>Built for South African founders, not repackaged US advice.</p>
+    <span class="brand small"><svg class="brand-mark" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="6" fill="#0A0A0A"/><rect x="14.4" y="7" width="5.2" height="13.4" rx="1.4" fill="#fff"/><rect x="14.4" y="22.6" width="5.2" height="5.2" rx="1.4" fill="#fff"/></svg>The&nbsp;Hustle<span>!</span></span>
+    <p>Opportunity isn't found. It's built.</p>
   </div>
 </footer>
 <script>
@@ -86,7 +86,7 @@ function layout_footer(): void {
 
   function confetti() {
     if (reduce) return;
-    const colors = ['#C8962C', '#E7C989', '#6D5AE6', '#1A2B4C', '#12875A'];
+    const colors = ['#0A0A0A', '#333333', '#777777', '#BBBBBB', '#0A0A0A'];
     for (let i = 0; i < 80; i++) {
       const c = document.createElement('div');
       c.className = 'confetti';
