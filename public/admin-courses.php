@@ -193,6 +193,8 @@ layout_header('Course builder', 'builder', true);
   <p class="page-sub"><?= count($courses) ?> course<?= count($courses) === 1 ? '' : 's' ?> · describe a course and let AI draft it, or build by hand</p>
 </header>
 
+<p style="margin:-6px 0 0"><a href="/admin-unlock.php" style="font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase">Unlock a module for a specific user →</a></p>
+
 <div class="cb">
   <?php if ($flash): ?><div class="flash"><?= e($flash) ?></div><?php endif; ?>
   <?php if ($aiError): ?><div class="aierr">⚠ <?= e($aiError) ?></div><?php endif; ?>

@@ -54,6 +54,14 @@ layout_header('Your course', 'course', true);
   </div>
 </section>
 
+<a class="continue-card" href="/course.php" style="margin-bottom:14px">
+  <div class="cc-body">
+    <p class="cc-lbl">Your path</p>
+    <h2>Build Your Online Store — the graded course</h2>
+    <p class="cc-sum">Work through the modules in order. Pass each module quiz to unlock the next.</p>
+  </div>
+</a>
+
 <?php if ($nextKey): $nm = $modules[$nextKey]; ?>
 <a class="continue-card" href="/module.php?m=<?= e($nextKey) ?>">
   <div class="cc-body">
