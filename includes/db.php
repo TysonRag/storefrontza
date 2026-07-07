@@ -121,6 +121,17 @@ function db(): PDO {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )');
 
+    // Phase 2: manual module unlocks (admin override of sequential locking)
+    $pdo->exec('CREATE TABLE IF NOT EXISTS unlocks (
+        user_id INTEGER NOT NULL,
+        module_id INTEGER NOT NULL,
+        granted_by INTEGER,
+        created_at TEXT NOT NULL DEFAULT (datetime(\'now\')),
+        PRIMARY KEY (user_id, module_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+    )');
+
     // ---- auto-seed a login so it survives free-tier filesystem wipes ----
     // Dev default is admin@admin.com / admin (repo is public, so swap before a real
     // launch by setting ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD env vars).
