@@ -272,6 +272,7 @@ layout_header('Course builder', 'builder', true);
         <span class="mod-meta">
           <span class="chip-t"><?= (int)$m['topic_count'] ?> topic<?= (int)$m['topic_count'] === 1 ? '' : 's' ?></span>
           <?php if ((int)$m['read_min']): ?><span>≈<?= (int)$m['read_min'] ?> min</span><?php endif; ?>
+          <a href="/admin-quiz.php?module=<?= (int)$m['id'] ?>" style="font-family:var(--disp);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink);border:1px solid var(--line-2);padding:3px 9px;border-radius:4px;text-decoration:none">Quiz →</a>
         </span>
       </li>
       <?php endforeach; ?>
