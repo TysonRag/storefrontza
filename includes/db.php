@@ -85,6 +85,31 @@ function db(): PDO {
         FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
     )');
 
+    // Phase 1: quiz engine. questions belong to a topic of type 'quiz'.
+    $pdo->exec('CREATE TABLE IF NOT EXISTS questions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        topic_id INTEGER NOT NULL,
+        prompt TEXT NOT NULL,
+        kind TEXT NOT NULL DEFAULT \'mc\',
+        options TEXT DEFAULT \'[]\',
+        answer TEXT DEFAULT \'[]\',
+        points INTEGER NOT NULL DEFAULT 1,
+        sort INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE
+    )');
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS quiz_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        topic_id INTEGER NOT NULL,
+        score_pct INTEGER NOT NULL DEFAULT 0,
+        passed INTEGER NOT NULL DEFAULT 0,
+        answers TEXT DEFAULT \'{}\',
+        created_at TEXT NOT NULL DEFAULT (datetime(\'now\')),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE
+    )');
+
     // ---- auto-seed a login so it survives free-tier filesystem wipes ----
     // Dev default is admin@admin.com / admin (repo is public, so swap before a real
     // launch by setting ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD env vars).
