@@ -4,6 +4,14 @@ require_once __DIR__ . '/../includes/layout.php';
 require_login();
 
 $uid = current_user_id();
+
+// First-run gate: new users take the assessment before anything else.
+try {
+    $__a = db()->prepare('SELECT 1 FROM assessment_results WHERE user_id = ? LIMIT 1');
+    $__a->execute([$uid]);
+    if (!$__a->fetch()) { header('Location: /assessment.php'); exit; }
+} catch (\Throwable $e) { /* table not present yet — don't block */ }
+
 $st = user_stats($uid);
 $doneSet = array_flip($st['progress']);
 $modules = course_modules();
