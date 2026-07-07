@@ -110,6 +110,17 @@ function db(): PDO {
         FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE
     )');
 
+    // Phase 6: assessment results (one latest row per user drives their personalised view)
+    $pdo->exec('CREATE TABLE IF NOT EXISTS assessment_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        answers TEXT DEFAULT \'{}\',
+        goal_area TEXT DEFAULT \'\',
+        stage TEXT DEFAULT \'\',
+        created_at TEXT NOT NULL DEFAULT (datetime(\'now\')),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )');
+
     // ---- auto-seed a login so it survives free-tier filesystem wipes ----
     // Dev default is admin@admin.com / admin (repo is public, so swap before a real
     // launch by setting ADMIN_SEED_EMAIL and ADMIN_SEED_PASSWORD env vars).
